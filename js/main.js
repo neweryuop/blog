@@ -30,16 +30,19 @@
       toTopAt: 0.9
     },
     scroll: {
-      navOffset: 24,     // 滚动目标在导航下方留的呼吸空间
-      minDuration: 420,  // 平滑滚动最短时长（ms）
-      maxDuration: 1100, // 平滑滚动最长时长
-      speedFactor: 0.5   // 距离 → 时长 的换算系数
+      navOffset: 24,
+      minDuration: 420,
+      maxDuration: 1100,
+      speedFactor: 0.5
     }
   };
 
   var TAU = Math.PI * 2;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* =========================================================
+     工具函数
+     ========================================================= */
   function $(s, c) { return (c || document).querySelector(s); }
   function $$(s, c) {
     return Array.prototype.slice.call((c || document).querySelectorAll(s));
@@ -69,6 +72,80 @@
     };
   }
 
+  /* 解析 md 的 front matter（浏览器端使用） */
+  function parseFrontMatter(raw) {
+    var m = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/.exec(raw);
+    if (!m) return { data: {}, body: raw };
+
+    var data = {};
+    m[1].split(/\r?\n/).forEach(function (line) {
+      var idx = line.indexOf(':');
+      if (idx < 0) return;
+      var key = line.slice(0, idx).trim();
+      if (!key) return;
+      var val = line.slice(idx + 1).trim();
+      if (/^\[.*\]$/.test(val)) {
+        val = val.slice(1, -1).split(',').map(function (s) {
+          return s.trim().replace(/^["']|["']$/g, '');
+        }).filter(Boolean);
+      } else {
+        val = val.replace(/^["']|["']$/g, '');
+      }
+      data[key] = val;
+    });
+
+    return { data: data, body: raw.slice(m[0].length) };
+  }
+
+  /* =========================================================
+     文章数据加载：线上读静态文件，本地回退 API
+     ========================================================= */
+
+  /* 文章列表：优先 posts.json，没有则回退 /api/posts */
+  function fetchPostsIndex() {
+    return fetch('posts.json', { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('no static index');
+        return res.json();
+      })
+      .catch(function () {
+        return fetch('/api/posts', { cache: 'no-store' })
+          .then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          });
+      });
+  }
+
+  /* 单篇文章：优先 posts/slug.md（浏览器解析），没有则回退 /api/posts/slug */
+  function fetchPost(slug) {
+    return fetch('posts/' + encodeURIComponent(slug) + '.md', { cache: 'no-store' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('no md');
+        return res.text();
+      })
+      .then(function (raw) {
+        var parsed = parseFrontMatter(raw);
+        return {
+          slug: slug,
+          title: parsed.data.title || slug,
+          date: parsed.data.date || '',
+          tags: Array.isArray(parsed.data.tags)
+            ? parsed.data.tags
+            : (parsed.data.tags ? [parsed.data.tags] : []),
+          body: parsed.body
+        };
+      })
+      .catch(function () {
+        return fetch('/api/posts/' + encodeURIComponent(slug), { cache: 'no-store' })
+          .then(function (res) {
+            if (!res.ok) throw new Error('文章不存在');
+            return res.json();
+          });
+      });
+  }
+
+  /* 共享下潜状态 */
   var diveTarget = 0;
   var diveSmooth = 0;
 
@@ -156,7 +233,7 @@
   }
 
   /* =========================================================
-     3. 水面场景
+     3. 水面场景：涟漪 + 气泡 + 速度线
      ========================================================= */
   function initWaterScene() {
     var rCanvas = $('#ripple');
@@ -497,7 +574,7 @@
   }
 
   /* =========================================================
-     5. 文章：拉列表 / 归档 / 渲染 / 路由
+     5. 文章：列表 / 归档 / 详情 / 路由
      ========================================================= */
   function initPosts() {
     var grid = $('#grid');
@@ -544,7 +621,7 @@
       grid.innerHTML =
         '<div class="empty">' +
           (withCode
-            ? '还没有文章。<br>在 <code>posts/</code> 目录下放一个 <code>.md</code> 文件，刷新页面即可看到。'
+            ? '还没有文章。<br>在 <code>posts/</code> 目录下放一个 <code>.md</code> 文件，然后重新部署。'
             : escapeHtml(message)) +
         '</div>';
       if (archiveList) archiveList.innerHTML = '';
@@ -645,23 +722,18 @@
       cards.forEach(function (c) { cardObserver.observe(c); });
     }
 
-    /* ---------- 拉列表 ---------- */
+    /* ---------- 加载列表 ---------- */
     function loadList() {
       renderSkeletons();
 
-      fetch('/api/posts', { cache: 'no-store' })
-        .then(function (res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
-        })
+      fetchPostsIndex()
         .then(function (posts) {
           state.posts = posts;
           renderCards(posts);
           renderArchive(posts);
-          if (window.__refreshSpy) window.__refreshSpy();
         })
         .catch(function () {
-          renderEmpty('无法加载文章列表。请确认已通过 node server.js 启动服务。', false);
+          renderEmpty('无法加载文章列表。本地请先运行 node build.js 或 node server.js，线上请检查 Actions 是否成功生成了 posts.json。', false);
         });
     }
 
@@ -685,11 +757,7 @@
           '<div class="sk sk-text"></div>' +
         '</div>';
 
-      fetch('/api/posts/' + encodeURIComponent(slug), { cache: 'no-store' })
-        .then(function (res) {
-          if (!res.ok) throw new Error('文章不存在');
-          return res.json();
-        })
+      fetchPost(slug)
         .then(function (post) {
           var tags = (post.tags || []).map(function (t) {
             return '<span class="tag">' + escapeHtml(t) + '</span>';
@@ -767,7 +835,7 @@
       }
     }
 
-    /* ---------- 导航点击时，立即关闭文章（由 initNavScroll 广播） ---------- */
+    /* ---------- 导航点击时立即关闭文章 ---------- */
     window.addEventListener('dive:navscroll', function () {
       if (state.activeSlug || !postView.hidden) {
         closePost(true);
@@ -788,7 +856,7 @@
       archiveList.addEventListener('click', function (e) {
         var link = e.target.closest('a[data-slug]');
         if (!link) return;
-        // 让 hash 自然变化，handleRoute 会接管
+        // 让 hash 自然变化，handleRoute 接管
       });
     }
 
@@ -826,11 +894,9 @@
       if (Math.abs(diff) < 2) return;
 
       var start = performance.now();
-
       function ease(t) {
         return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       }
-
       function step(now) {
         var t = Math.min((now - start) / duration, 1);
         window.scrollTo(0, startY + diff * ease(t));
@@ -860,14 +926,13 @@
       smoothScrollTo(top, duration);
     }
 
-    /* ---------- 点击 data-scroll 链接 ---------- */
     document.addEventListener('click', function (e) {
       var link = e.target.closest('a[data-scroll]');
       if (!link) return;
 
       var href = link.getAttribute('href') || '';
       if (!href || href.charAt(0) !== '#') return;
-      if (href.indexOf('#/') === 0) return; // 文章详情链接不拦截
+      if (href.indexOf('#/') === 0) return;
 
       var id = href.slice(1);
       if (!id) return;
@@ -876,15 +941,12 @@
 
       e.preventDefault();
 
-      // 如果文章视图打开，先关掉
       window.dispatchEvent(new CustomEvent('dive:navscroll'));
 
-      // 更新 hash（不影响滚动）
       if (history.pushState) {
         history.pushState(null, '', href);
       }
 
-      // 关闭移动端菜单
       var menuBtn = $('#menuBtn');
       if (menuBtn && menuBtn.getAttribute('aria-expanded') === 'true') {
         menuBtn.click();
@@ -893,7 +955,6 @@
       scrollToTarget(target);
     });
 
-    /* ---------- scrollspy ---------- */
     var sectionIds = ['articles', 'archive', 'about'];
     var navLinks = $$('.nav-links a[data-scroll], .mobile-menu a[data-scroll]');
 
@@ -923,8 +984,6 @@
     window.addEventListener('scroll', rafThrottle(updateSpy), { passive: true });
     window.addEventListener('resize', rafThrottle(updateSpy));
     updateSpy();
-
-    window.__refreshSpy = updateSpy;
   }
 
   /* =========================================================
