@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="color-scheme" content="dark light" />
+<meta name="theme-color" content="#02050a" id="metaTheme" />
+<title>深潜 · 博客</title>
+
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('dive-theme');
+    if (t === 'light' || t === 'dark') {
+      document.documentElement.setAttribute('data-theme', t);
+    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  } catch (e) {}
+})();
+</script>
+
+<link rel="stylesheet" href="css/base.css" />
+<link rel="stylesheet" href="css/layout.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+
+<script defer src="js/markdown.js"></script>
+<script defer src="js/main.js"></script>
+</head>
+<body>
+
+<a class="skip-link" href="#articles" data-scroll>跳到文章列表</a>
+
+<div class="progress" aria-hidden="true">
+  <div class="progress-fill" id="progressFill"></div>
+</div>
+
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top" data-scroll>深潜</a>
+
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#articles" data-scroll aria-current="page">文章</a>
+      <a href="#archive" data-scroll>归档</a>
+      <a href="#about" data-scroll>关于</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeBtn" type="button"
+              aria-label="切换浅色 / 深色主题" aria-pressed="false">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/>
+        </svg>
+      </button>
+
+      <button class="icon-btn menu-btn" id="menuBtn" type="button"
+              aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobileMenu">
+        <svg class="icon-burger" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#articles" data-scroll>文章</a>
+    <a href="#archive" data-scroll>归档</a>
+    <a href="#about" data-scroll>关于</a>
+  </div>
+</header>
+
+<div class="stage" id="stage" aria-hidden="true">
+  <canvas id="ripple"></canvas>
+  <canvas id="bubbles"></canvas>
+  <div class="dive-dark" id="diveDark"></div>
+
+  <div class="hero" id="hero">
+    <div class="kicker">Deep Water · Notes</div>
+    <h1>静水流深</h1>
+    <p class="sub">在安静的代码与漫长的思考之间，记录那些微小却清晰的回声。</p>
+    <div class="rule"></div>
+    <div class="hint">向下滚动 · 开始深潜</div>
+  </div>
+
+  <div class="vignette"></div>
+</div>
+
+<main class="content" id="top">
+  <div class="dive-spacer" aria-hidden="true"></div>
+
+  <section class="articles" id="articles" aria-labelledby="articlesTitle">
+    <div class="section-head">
+      <div class="eyebrow">Deep Dive</div>
+      <h2 id="articlesTitle">潜入更深处</h2>
+      <p>水面之下，是更慢的思考与更长的回声。</p>
+    </div>
+
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <section class="archive" id="archive" aria-labelledby="archiveTitle">
+    <div class="section-head">
+      <div class="eyebrow">Archive</div>
+      <h2 id="archiveTitle">全部文章</h2>
+      <p>按时间倒序，写过的都在这里。</p>
+    </div>
+
+    <div class="archive-list" id="archiveList" aria-live="polite"></div>
+  </section>
+
+  <footer class="foot" id="about">
+    <nav class="foot-links" aria-label="页脚导航">
+      <a href="#articles" data-scroll>文章</a>
+      <a href="#archive" data-scroll>归档</a>
+      <a href="#about" data-scroll>关于</a>
+      <a href="#top" data-scroll>回到水面</a>
+    </nav>
+    <div class="foot-note">— 深潜至此，回望水面 —</div>
+  </footer>
+</main>
+
+<div class="post-view" id="postView" hidden>
+  <div class="post-content" id="postContent"></div>
+</div>
+
+<button class="to-top" id="toTop" type="button" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/>
+  </svg>
+</button>
+
+<div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+</body>
+</html>

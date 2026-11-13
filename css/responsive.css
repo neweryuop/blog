@@ -1,0 +1,133 @@
+/* 超宽屏 */
+@media (min-width: 1500px) {
+  .articles { max-width: 1300px; }
+  .nav-inner { max-width: 1420px; }
+  .post-content { max-width: 780px; }
+}
+
+/* 平板 / 小桌面 */
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+  .menu-btn { display: grid; }
+  .mobile-menu { display: block; }
+  .nav-inner { gap: 12px; }
+  .nav-actions { margin-left: auto; }
+}
+
+/* 手机 */
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+  .articles { padding-bottom: 100px; }
+  .card { padding: 24px 20px 20px; border-radius: 17px; }
+  .hero .sub { max-width: 22em; }
+  .hint { font-size: 11px; letter-spacing: 0.2em; }
+  .to-top { width: 44px; height: 44px; }
+  .post-view { padding-top: calc(var(--nav-h) + 32px); }
+  .post-back { margin-bottom: 26px; }
+  .prose { font-size: 15.5px; }
+}
+
+/* 横屏矮屏 */
+@media (max-height: 520px) and (orientation: landscape) {
+  .kicker { margin-bottom: 8px; }
+  .hero h1 { font-size: clamp(26px, 6.6vw, 56px); }
+  .hero .sub { display: none; }
+  .rule { display: none; }
+  .hint { display: none; }
+  .dive-spacer { height: 80vh; }
+}
+
+/* 粗指针 */
+@media (pointer: coarse) {
+  .nav-links a { min-height: 44px; display: inline-flex; align-items: center; }
+  .icon-btn { width: 44px; height: 44px; }
+  .mobile-menu a { padding: 17px 4px; }
+  .read-more { padding: 10px 2px; }
+  .foot-links a { padding: 10px 2px; }
+  .post-back { padding: 12px 20px 12px 16px; }
+}
+
+/* 高对比度 */
+@media (prefers-contrast: more) {
+  :root {
+    --text-dim: #dbe9f7;
+    --text-faint: rgba(190, 220, 245, 0.8);
+    --card-border: rgba(120, 200, 255, 0.55);
+    --nav-border: rgba(120, 200, 255, 0.4);
+  }
+  [data-theme="light"] {
+    --text-dim: #0a2338;
+    --text-faint: rgba(15, 50, 78, 0.78);
+    --card-border: rgba(10, 90, 140, 0.55);
+  }
+}
+
+/* 减少透明度 */
+@media (prefers-reduced-transparency: reduce) {
+  .card, .nav, .to-top {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .card { background: #0a1826; }
+  [data-theme="light"] .card { background: #ffffff; }
+  .nav { background: #061420 !important; }
+  [data-theme="light"] .nav { background: #f6fbfe !important; }
+}
+
+/* 减少动效 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .card { opacity: 1 !important; transform: none !important; }
+  .kicker, .hero h1, .hero .sub, .rule, .hint { opacity: 1 !important; }
+  .hint::after { display: none; }
+  .mobile-menu { transition: none; }
+  .sk { animation: none; }
+  .post-view { transition: none; }
+}
+
+/* 打印 */
+@media print {
+  .stage, .nav, .progress, .to-top, .skip-link, .hint,
+  .dive-spacer, .foot-links, .post-back { display: none !important; }
+
+  html, body { background: #fff !important; color: #000 !important; }
+  .content { position: static; }
+  .articles { padding: 0; max-width: none; }
+  .post-view { position: static; padding: 0; background: #fff; }
+
+  .card {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 14px;
+  }
+
+  .card h3, .card p, .meta { color: #000 !important; }
+  .section-head h2, .post-header h1 {
+    color: #000 !important;
+    -webkit-text-fill-color: #000;
+    background: none;
+  }
+  .prose { color: #222; }
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose strong { color: #000; }
+  .prose a { color: #0645ad; }
+  .prose pre, .prose code { background: #f4f4f4; color: #000; border-color: #ddd; }
+  .read-more { display: none; }
+}
+/* 归档：手机适配 */
+@media (max-width: 640px) {
+  .archive { padding-bottom: 100px; }
+  .archive-year li a { gap: 14px; padding: 11px 4px; }
+  .archive-month { width: 36px; font-size: 11px; }
+  .archive-title { font-size: 14px; }
+}
