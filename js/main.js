@@ -55,7 +55,7 @@
     return { data: data, body: raw.slice(m[0].length) };
   }
 
-  // 【修复】统一使用相对路径请求，避免部署在子目录（如 GitHub Pages Project 页面）时请求失败
+  // 统一使用相对路径请求，避免部署在子目录时请求失败
   function fetchPostsIndex() {
     return fetch('posts.json', { cache: 'no-store' })
       .then(function (res) { if (!res.ok) throw new Error('no static index'); return res.json(); })
@@ -325,8 +325,11 @@
     if (!grid || !postView || !postContent) return;
     var state = { posts: [], activeSlug: null, savedScrollY: 0, loading: false };
     var cardObserver = null;
+    
+    // 动态获取并保存初始的标题和描述
     var originalTitle = document.title;
     var metaDesc = document.querySelector('meta[name="description"]');
+    var originalDesc = metaDesc ? metaDesc.getAttribute('content') : '';
 
     function renderSkeletons() {
       var html = '';
@@ -436,8 +439,8 @@
         postContent.innerHTML = '<button class="post-back" type="button" data-back>← 返回列表</button><header class="post-header"><div class="post-tags">' + tags + '</div><h1>' + escapeHtml(post.title) + '</h1><div class="post-meta">' + escapeHtml(post.date) + '</div></header><div class="prose">' + window.md.parse(post.body) + '</div><button class="post-back post-back-bottom" type="button" data-back>← 返回列表</button>';
         state.activeSlug = slug; 
         
-        // 【新增】动态更新 SEO 标题与描述
-        document.title = post.title + ' · 深潜';
+        // 动态更新 SEO 标题与描述
+        document.title = post.title + ' · 临渊观澜';
         if (metaDesc) {
           var desc = post.excerpt || post.body.replace(/[#>*_`~\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
           metaDesc.setAttribute('content', desc);
@@ -446,7 +449,6 @@
         postView.scrollTop = 0; 
         requestAnimationFrame(function () { 
           postView.classList.add('show'); 
-          // 【新增】焦点管理：将焦点移入弹出的阅读界面
           var backBtn = postContent.querySelector('.post-back');
           if (backBtn) backBtn.focus();
         });
@@ -457,16 +459,15 @@
     }
 
     function closePost(skipRestore) {
-      // 恢复原始 SEO 信息
+      // 恢复动态读取的原始 SEO 信息
       document.title = originalTitle;
-      if (metaDesc) metaDesc.setAttribute('content', '在安静的代码与漫长的思考之间，记录那些微小却清晰的回声。');
+      if (metaDesc) metaDesc.setAttribute('content', originalDesc);
 
       if (!state.activeSlug) {
         postView.classList.remove('show'); document.body.classList.remove('locked'); postView.hidden = true; return;
       }
       state.activeSlug = null; postView.classList.remove('show'); document.body.classList.remove('locked');
       
-      // 焦点返回到触发阅读的位置附近（或安全位置）
       var gridCard = document.querySelector('.card[data-slug]');
       if (gridCard) gridCard.focus({ preventScroll: true });
 
