@@ -42,16 +42,27 @@
   animation-delay: -10s;
 }
 
-/* 亮色模式专属光晕（更明亮透亮） */
-[data-theme="light"] .aurora { opacity: 0.8; filter: blur(100px); }
-[data-theme="light"] .aurora-1 { background: rgba(77, 214, 255, 0.3); }
-[data-theme="light"] .aurora-2 { background: rgba(185, 160, 255, 0.3); }
-[data-theme="light"] .aurora-3 { background: rgba(150, 230, 255, 0.4); }
+/* 亮色模式专属光晕（更明亮透亮，且动画幅度更大） */
+[data-theme="light"] .aurora { opacity: 0.9; filter: blur(80px); }
+[data-theme="light"] .aurora-1 { background: rgba(45, 160, 220, 0.45); }
+[data-theme="light"] .aurora-2 { background: rgba(140, 110, 230, 0.45); }
+[data-theme="light"] .aurora-3 { background: rgba(100, 200, 240, 0.5); }
+
+/* 为亮色模式单独分配独立的动画，避免影响深色模式 */
+[data-theme="light"] .aurora-1 { animation: floatAuroraLight 15s infinite alternate ease-in-out; }
+[data-theme="light"] .aurora-2 { animation: floatAuroraLight 18s infinite alternate ease-in-out; animation-delay: -5s; }
+[data-theme="light"] .aurora-3 { animation: floatAuroraLight 20s infinite alternate ease-in-out; animation-delay: -10s; }
 
 @keyframes floatAurora {
   0% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(5%, 5%) scale(1.1); }
   100% { transform: translate(-5%, 10%) scale(0.9); }
+}
+
+@keyframes floatAuroraLight {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8%, -6%) scale(1.15); }
+  100% { transform: translate(-8%, 10%) scale(0.95); }
 }
 
 #ripple, #bubbles {

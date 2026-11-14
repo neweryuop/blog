@@ -60,9 +60,9 @@
   color-scheme: light;
 
   --bg: #eef6fc;
-  --stage-1: #dbeaf6;
-  --stage-2: #e9f3fb;
-  --stage-3: #f6fbfe;
+  --stage-1: #b3d4ea; /* 加深的灰蓝 */
+  --stage-2: #d0e5f2; /* 中等浅蓝 */
+  --stage-3: #e2eff7; /* 极浅蓝，不再是纯白 */
 
   --title-grad: linear-gradient(105deg, #0b2b44 0%, #145a80 38%, #0a8fc4 68%, #4a5fd6 100%);
 
