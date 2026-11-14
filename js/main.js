@@ -1,11 +1,16 @@
 (function () {
   'use strict';
 
+  // 关闭浏览器默认的滚动位置恢复，由我们手动接管
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
   var CONFIG = {
     themeKey: 'dive-theme',
     water: { maxRings: 200, bubbleCount: 70, moveThrottle: 46, smooth: 0.09, diveBoost: 9 },
     dive: { scrollFactor: 0.62, shiftVH: 112, scale: 0.26, fadeSpeed: 1.3, ease: 1.8, darken: 0.95 },
-    cards: { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    cards: { threshold: 0.12, rootMargin: '0px 0px -8% 0px', maxAnimDelay: 10 }, // 限制入场动画延迟索引
     ui: { navScrolledAt: 20, toTopAt: 0.9 },
     scroll: { navOffset: 24, minDuration: 420, maxDuration: 1100, speedFactor: 0.5 }
   };
@@ -50,11 +55,12 @@
     return { data: data, body: raw.slice(m[0].length) };
   }
 
+  // 【修复】统一使用相对路径请求，避免部署在子目录（如 GitHub Pages Project 页面）时请求失败
   function fetchPostsIndex() {
     return fetch('posts.json', { cache: 'no-store' })
       .then(function (res) { if (!res.ok) throw new Error('no static index'); return res.json(); })
       .catch(function () {
-        return fetch('/api/posts', { cache: 'no-store' })
+        return fetch('api/posts', { cache: 'no-store' })
           .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); });
       });
   }
@@ -73,7 +79,7 @@
         };
       })
       .catch(function () {
-        return fetch('/api/posts/' + encodeURIComponent(slug), { cache: 'no-store' })
+        return fetch('api/posts/' + encodeURIComponent(slug), { cache: 'no-store' })
           .then(function (res) { if (!res.ok) throw new Error('文章不存在'); return res.json(); });
       });
   }
@@ -319,6 +325,8 @@
     if (!grid || !postView || !postContent) return;
     var state = { posts: [], activeSlug: null, savedScrollY: 0, loading: false };
     var cardObserver = null;
+    var originalTitle = document.title;
+    var metaDesc = document.querySelector('meta[name="description"]');
 
     function renderSkeletons() {
       var html = '';
@@ -340,7 +348,9 @@
         var firstTag = (p.tags && p.tags[0]) || '随笔';
         var href = '#/post/' + encodeURIComponent(p.slug);
         var slideDir = idx % 2 === 0 ? 'from-left' : 'from-right';
-        return '<article class="card ' + slideDir + '" style="--i:' + idx + '" data-slug="' + escapeHtml(p.slug) + '">' +
+        // 限制 --i 最大值，防止文章过多时入场等待时间过长
+        var delayIndex = Math.min(idx, CONFIG.cards.maxAnimDelay);
+        return '<article class="card ' + slideDir + '" style="--i:' + delayIndex + '" data-slug="' + escapeHtml(p.slug) + '">' +
             '<span class="tag">' + escapeHtml(firstTag) + '</span>' +
             '<h3>' + escapeHtml(p.title) + '</h3>' +
             '<p>' + escapeHtml(p.excerpt) + '</p>' +
@@ -396,8 +406,19 @@
 
     function loadList() {
       renderSkeletons();
+      var startTime = Date.now();
+      // 加入最小 300ms 骨架屏展示时间，防止网络过快导致闪烁
       fetchPostsIndex().then(function (posts) {
-        state.posts = posts; renderCards(posts); renderArchive(posts);
+        return new Promise(function(resolve) {
+          var elapsed = Date.now() - startTime;
+          var delay = Math.max(0, 300 - elapsed);
+          setTimeout(function() {
+            state.posts = posts;
+            renderCards(posts);
+            renderArchive(posts);
+            resolve();
+          }, delay);
+        });
       }).catch(function () {
         renderEmpty('无法加载文章列表。本地请先运行 node build.js 或 node server.js，线上请检查 Actions 是否成功生成了 posts.json。', false);
       });
@@ -413,8 +434,22 @@
       fetchPost(slug).then(function (post) {
         var tags = (post.tags || []).map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') || '<span class="tag">随笔</span>';
         postContent.innerHTML = '<button class="post-back" type="button" data-back>← 返回列表</button><header class="post-header"><div class="post-tags">' + tags + '</div><h1>' + escapeHtml(post.title) + '</h1><div class="post-meta">' + escapeHtml(post.date) + '</div></header><div class="prose">' + window.md.parse(post.body) + '</div><button class="post-back post-back-bottom" type="button" data-back>← 返回列表</button>';
-        state.activeSlug = slug; document.title = post.title + ' · 深潜';
-        postView.scrollTop = 0; requestAnimationFrame(function () { postView.classList.add('show'); });
+        state.activeSlug = slug; 
+        
+        // 【新增】动态更新 SEO 标题与描述
+        document.title = post.title + ' · 深潜';
+        if (metaDesc) {
+          var desc = post.excerpt || post.body.replace(/[#>*_`~\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+          metaDesc.setAttribute('content', desc);
+        }
+
+        postView.scrollTop = 0; 
+        requestAnimationFrame(function () { 
+          postView.classList.add('show'); 
+          // 【新增】焦点管理：将焦点移入弹出的阅读界面
+          var backBtn = postContent.querySelector('.post-back');
+          if (backBtn) backBtn.focus();
+        });
       }).catch(function (err) {
         postContent.innerHTML = '<button class="post-back" type="button" data-back>← 返回列表</button><div class="empty">' + escapeHtml(err.message || '加载失败') + '</div>';
         postView.classList.add('show');
@@ -422,15 +457,24 @@
     }
 
     function closePost(skipRestore) {
+      // 恢复原始 SEO 信息
+      document.title = originalTitle;
+      if (metaDesc) metaDesc.setAttribute('content', '在安静的代码与漫长的思考之间，记录那些微小却清晰的回声。');
+
       if (!state.activeSlug) {
-        postView.classList.remove('show'); document.body.classList.remove('locked'); postView.hidden = true; document.title = '深潜 · 博客'; return;
+        postView.classList.remove('show'); document.body.classList.remove('locked'); postView.hidden = true; return;
       }
       state.activeSlug = null; postView.classList.remove('show'); document.body.classList.remove('locked');
-      if (skipRestore) { postView.hidden = true; document.title = '深潜 · 博客'; return; }
+      
+      // 焦点返回到触发阅读的位置附近（或安全位置）
+      var gridCard = document.querySelector('.card[data-slug]');
+      if (gridCard) gridCard.focus({ preventScroll: true });
+
+      if (skipRestore) { postView.hidden = true; return; }
       var restoreY = state.savedScrollY;
       setTimeout(function () {
         if (state.activeSlug) return;
-        postView.hidden = true; window.scrollTo(0, restoreY); document.title = '深潜 · 博客';
+        postView.hidden = true; window.scrollTo(0, restoreY);
       }, 350);
     }
 

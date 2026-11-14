@@ -7,6 +7,13 @@
 <meta name="theme-color" content="#02050a" id="metaTheme" />
 <title>深潜 · 博客</title>
 
+<!-- SEO 与社交分享元信息 -->
+<meta name="description" content="海拥落日归深处，天散余霞染远山" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="临渊观澜 · 披霞听海" />
+<meta property="og:description" content="海拥落日归深处，天散余霞染远山" />
+<meta name="twitter:card" content="summary" />
+
 <!-- 极简 SVG 网站图标 -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 
@@ -31,6 +38,9 @@
 <script defer src="js/main.js"></script>
 </head>
 <body>
+
+<!-- 无障碍屏幕阅读器标题 -->
+<h1 class="sr-only">临渊观澜 · 披霞听海</h1>
 
 <a class="skip-link" href="#articles" data-scroll>跳到文章列表</a>
 
@@ -96,9 +106,9 @@
   <div class="hero" id="hero">
     <div class="kicker">Deep Water · Notes</div>
     <h1>静水流深</h1>
-    <p class="sub">在安静的代码与漫长的思考之间，记录那些微小却清晰的回声。</p>
+    <p class="sub">海拥落日归深处，天散余霞染远山</p>
     <div class="rule"></div>
-    <div class="hint">向下滚动 · 开始深潜</div>
+    <div class="hint">向下滚动 · 开始下潜</div>
   </div>
 
   <div class="vignette"></div>
@@ -110,18 +120,21 @@
   <section class="articles" id="articles" aria-labelledby="articlesTitle">
     <div class="section-head">
       <div class="eyebrow">Deep Dive</div>
-      <h2 id="articlesTitle">潜入更深处</h2>
-      <p>水面之下，是更慢的思考与更长的回声。</p>
+      <h2 id="articlesTitle">下沉更深~</h2>
+      <p>观澜采珠，揽霞入怀</p>
     </div>
 
     <div class="grid" id="grid" aria-live="polite"></div>
+    <noscript>
+      <div class="empty">本站的文章列表与内容渲染依赖 JavaScript，请在浏览器设置中启用 JavaScript 后刷新页面。</div>
+    </noscript>
   </section>
 
   <section class="archive" id="archive" aria-labelledby="archiveTitle">
     <div class="section-head">
       <div class="eyebrow">Archive</div>
       <h2 id="archiveTitle">全部文章</h2>
-      <p>按时间倒序，写过的都在这里。</p>
+      <p>全都在这啦，别找啦</p>
     </div>
 
     <div class="archive-list" id="archiveList" aria-live="polite"></div>
@@ -132,9 +145,9 @@
       <a href="#articles" data-scroll>文章</a>
       <a href="#archive" data-scroll>归档</a>
       <a href="#about" data-scroll>关于</a>
-      <a href="#top" data-scroll>回到水面</a>
+      <a href="#top" data-scroll>回到水面冒个泡</a>
     </nav>
-    <div class="foot-note">— 深潜至此，回望水面 —</div>
+    <div class="foot-note">— 听澜拾贝，枕霞归海 —</div>
   </footer>
 </main>
 
@@ -142,7 +155,7 @@
   <div class="post-content" id="postContent"></div>
 </div>
 
-<button class="to-top" id="toTop" type="button" aria-label="回到顶部">
+<button class="to-top" id="toTop" type="button" aria-label="上浮至顶部">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M12 19V5M5.5 11.5L12 5l6.5 6.5"/>

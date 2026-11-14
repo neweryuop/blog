@@ -5,23 +5,49 @@ const path = require('path');
 const POSTS_DIR = path.join(__dirname, 'posts');
 const OUT_FILE = path.join(__dirname, 'posts.json');
 
+// 检查目录是否存在
+if (!fs.existsSync(POSTS_DIR)) {
+  console.error('[build] 错误: posts/ 目录不存在。请先创建目录并放入 .md 文件。');
+  process.exit(1);
+}
+
 function parseFrontMatter(raw) {
   const m = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/.exec(raw);
   if (!m) return { data: {}, body: raw };
+  
   const data = {};
-  m[1].split(/\r?\n/).forEach(line => {
+  const lines = m[1].split(/\r?\n/);
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const idx = line.indexOf(':');
-    if (idx < 0) return;
+    if (idx < 0) continue;
+    
     const key = line.slice(0, idx).trim();
-    if (!key) return;
+    if (!key) continue;
+    
     let val = line.slice(idx + 1).trim();
-    if (/^\[.*\]$/.test(val)) {
+
+    // 1. 处理多行 YAML 数组 (如 tags:\n  - 架构\n  - 前端)
+    if (val === '' && i + 1 < lines.length && /^\s*-\s+/.test(lines[i + 1])) {
+      val = [];
+      while (i + 1 < lines.length && /^\s*-\s+/.test(lines[i + 1])) {
+        i++;
+        val.push(lines[i].replace(/^\s*-\s+/, '').replace(/^["']|["']$/g, '').trim());
+      }
+    } 
+    // 2. 处理单行数组 (如 tags: [架构, 前端])
+    else if (/^\[.*\]$/.test(val)) {
       val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
-    } else {
+    } 
+    // 3. 普通字符串
+    else {
       val = val.replace(/^["']|["']$/g, '');
     }
+    
     data[key] = val;
-  });
+  }
+  
   return { data, body: raw.slice(m[0].length) };
 }
 

@@ -3,6 +3,13 @@ name: Deploy Blog to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      - 'posts/**'
+      - 'css/**'
+      - 'js/**'
+      - 'index.html'
+      - 'build.js'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -32,13 +39,21 @@ jobs:
       - name: Build posts.json
         run: node build.js
 
+      - name: Prepare dist directory
+        run: |
+          mkdir -p dist
+          cp index.html posts.json favicon.svg dist/
+          cp -r posts css js dist/
+          # 如果有 CNAME 文件，取消下面这行的注释
+          # cp CNAME dist/ 2>/dev/null || true
+
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './dist'
 
       - name: Deploy to GitHub Pages
         id: deployment

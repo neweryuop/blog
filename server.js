@@ -2,8 +2,7 @@
 'use strict';
 
 /**
- * 深潜博客 · 本地服务
- * 零依赖，只用 Node 内置模块。
+ *   只用 Node 内置模块。
  *
  *   node server.js
  *   PORT=8080 node server.js
@@ -41,27 +40,45 @@ const MIME = {
   '.md': 'text/markdown; charset=utf-8'
 };
 
-/* 解析 front matter */
+/* 解析 front matter（已同步 build.js 的多行数组修复） */
 function parseFrontMatter(raw) {
   const m = /^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/.exec(raw);
   if (!m) return { data: {}, body: raw };
 
   const data = {};
-  m[1].split(/\r?\n/).forEach((line) => {
+  const lines = m[1].split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const idx = line.indexOf(':');
-    if (idx < 0) return;
+    if (idx < 0) continue;
+    
     const key = line.slice(0, idx).trim();
-    if (!key) return;
+    if (!key) continue;
+    
     let val = line.slice(idx + 1).trim();
-    if (/^\[.*\]$/.test(val)) {
+
+    // 1. 多行 YAML 数组
+    if (val === '' && i + 1 < lines.length && /^\s*-\s+/.test(lines[i + 1])) {
+      val = [];
+      while (i + 1 < lines.length && /^\s*-\s+/.test(lines[i + 1])) {
+        i++;
+        val.push(lines[i].replace(/^\s*-\s+/, '').replace(/^["']|["']$/g, '').trim());
+      }
+    } 
+    // 2. 单行数组
+    else if (/^\[.*\]$/.test(val)) {
       val = val.slice(1, -1).split(',').map((s) =>
         s.trim().replace(/^["']|["']$/g, '')
       ).filter(Boolean);
-    } else {
+    } 
+    // 3. 普通字符串
+    else {
       val = val.replace(/^["']|["']$/g, '');
     }
+    
     data[key] = val;
-  });
+  }
 
   return { data, body: raw.slice(m[0].length) };
 }
@@ -103,7 +120,9 @@ function getPost(slug) {
   if (!/^[\w\u4e00-\u9fa5.\-]+$/.test(slug)) return null;
 
   const file = path.join(POSTS_DIR, slug + '.md');
-  if (!file.startsWith(POSTS_DIR)) return null;
+  // 修复路径检查（使用 path.relative 防止 ../ 逃逸）
+  const relative = path.relative(POSTS_DIR, file);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) return null;
   if (!fs.existsSync(file)) return null;
 
   const raw = fs.readFileSync(file, 'utf8');
@@ -131,7 +150,9 @@ function serveStatic(res, pathname) {
   const p = pathname === '/' ? '/index.html' : pathname;
   const filePath = path.normalize(path.join(ROOT, p));
 
-  if (!filePath.startsWith(ROOT)) {
+  // 修复路径穿越漏洞（使用 path.relative）
+  const relative = path.relative(ROOT, filePath);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
     res.writeHead(403);
     res.end('forbidden');
     return;
@@ -186,7 +207,7 @@ http.createServer((req, res) => {
   serveStatic(res, pathname);
 }).listen(PORT, () => {
   console.log('');
-  console.log('  深潜博客已启动');
+  console.log('  博客已成功启动');
   console.log('  → http://localhost:' + PORT);
   console.log('');
   console.log('  文章目录: ' + POSTS_DIR);
